@@ -18,7 +18,6 @@ export function FarmOverview({ fields, activeFieldId, onSelect, onHome }: Props)
     >
       <header className="overview-header">
         <button className="brand" onClick={onHome} title="Back to home">
-        <div className="brand">
           <img className="brand-mark" src="/logo.png" alt="" aria-hidden />
           <div>
             <h1>SpraySense</h1>
