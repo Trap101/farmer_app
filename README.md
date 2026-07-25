@@ -92,6 +92,8 @@ build brief.
 
 Hackathon demo — tells farmers exactly when to spray instead of spraying on a fixed schedule.
 
+**Live demo:** https://spraysense.onrender.com
+
 ## Run it
 
 ```bash
@@ -99,7 +101,7 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:5173.
+Open http://localhost:5173 (or the [live demo](https://spraysense.onrender.com)).
 
 ## Demo flow
 
