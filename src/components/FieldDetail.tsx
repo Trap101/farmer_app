@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import type { Field } from '../data/fields'
-import { forecastForField, formatForecastLine } from '../api'
 import { LiveFeed } from './LiveFeed'
 import { WeatherPanel } from './WeatherPanel'
 import { ScoutPanel } from './ScoutPanel'
@@ -50,22 +49,6 @@ export function FieldDetail({ field, onBack }: Props) {
       setForecast(null)
     } finally {
       setRunning(false)
-type CalcState = 'idle' | 'loading' | 'done' | 'error'
-
-export function FieldDetail({ field, onBack }: Props) {
-  const [calcState, setCalcState] = useState<CalcState>('idle')
-  const [resultLine, setResultLine] = useState<string | null>(null)
-
-  async function handleCalculate() {
-    setCalcState('loading')
-    setResultLine(null)
-    try {
-      const forecast = await forecastForField(field)
-      setResultLine(formatForecastLine(forecast))
-      setCalcState('done')
-    } catch (err) {
-      setResultLine(err instanceof Error ? err.message : String(err))
-      setCalcState('error')
     }
   }
 
@@ -182,33 +165,6 @@ export function FieldDetail({ field, onBack }: Props) {
               )}
             </button>
           )}
-            {calcState === 'done' && resultLine ? (
-              <span className="calc-result">✓ {resultLine}</span>
-            ) : calcState === 'error' && resultLine ? (
-              <span className="calc-result calc-result-error">{resultLine}</span>
-            ) : (
-              <span>
-                Last sprayed {field.lastSprayed}. Forecast engine on Render
-                recomputes the threshold from price and scouting counts.
-              </span>
-            )}
-          </div>
-          <button
-            className={`calc-btn ${calcState === 'loading' ? 'calc-btn-loading' : ''}`}
-            onClick={handleCalculate}
-            disabled={calcState === 'loading'}
-          >
-            {calcState === 'loading' ? (
-              <>
-                <span className="spinner" aria-hidden />
-                Analyzing field conditions…
-              </>
-            ) : calcState === 'done' || calcState === 'error' ? (
-              'Recalculate next spray date'
-            ) : (
-              'Calculate next spray date'
-            )}
-          </button>
         </footer>
       </motion.div>
     </motion.div>
