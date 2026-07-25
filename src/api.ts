@@ -15,14 +15,19 @@ export type { Observation, Forecast, ScoutingSheet, ReasonCode }
 
 // Three deployments, three bases:
 //   dev            -> '/api', the Vite proxy to localhost:8787 (vite.config.ts)
-//   render         -> '', same origin: spraysense.onrender.com serves both the
-//                     built frontend and the API, so relative paths just work
-//   vercel / split -> set VITE_ENGINE_ORIGIN to the engine's origin, which makes
-//                     the calls cross-origin and leans on the engine's open CORS
+//   render         -> '', same origin: src/server.ts serves both the built
+//                     frontend and the API, so relative paths just work
+//   vercel / split -> set VITE_API_URL to the engine's origin, which makes the
+//                     calls cross-origin and leans on the engine's open CORS
+//
+// VITE_ENGINE_ORIGIN is accepted as an alias so a build configured with either
+// name works — they were introduced by two people at once.
 //
 // Point local dev at the deployed engine (which has GEMINI_API_KEY) with:
 //   ENGINE_ORIGIN=https://spraysense.onrender.com npm run dev
-const BASE = import.meta.env.VITE_ENGINE_ORIGIN ?? (import.meta.env.DEV ? '/api' : '')
+const CONFIGURED = import.meta.env.VITE_API_URL ?? import.meta.env.VITE_ENGINE_ORIGIN
+// A trailing slash would produce '//forecast', which some hosts 404.
+const BASE = CONFIGURED?.replace(/\/$/, '') ?? (import.meta.env.DEV ? '/api' : '')
 
 async function post<T>(path: string, body: unknown): Promise<T> {
   let res: Response
@@ -142,61 +147,4 @@ export function formatDate(iso: string | null): string {
     day: 'numeric',
     timeZone: 'UTC',
   })
-import type { Field } from './data/fields'
-import type { Forecast } from './types'
-
-/** Empty = same-origin (Render). Vercel sets VITE_API_URL to the Render API. */
-const API_URL = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') ?? ''
-
-/** Fresno County — matches WeatherPanel. Demo scout counts from demo.json. */
-export async function forecastForField(field: Field): Promise<Forecast> {
-  const res = await fetch(`${API_URL}/forecast`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({
-      lat: 36.7378,
-      lon: -119.7871,
-      crop_price: 10.5,
-      spray_cost_per_acre: 22,
-      yield_potential_bu_ac: 50,
-      seed: field.seed,
-      observations: [
-        {
-          field_id: field.name,
-          date: '2026-07-20',
-          count_per_plant: 95,
-          n_plants_sampled: 30,
-          pct_plants_infested: 85,
-          predator_count: 0.4,
-          growth_stage: 'R3',
-        },
-        {
-          field_id: field.name,
-          date: '2026-07-24',
-          count_per_plant: 180,
-          n_plants_sampled: 30,
-          pct_plants_infested: 92,
-          predator_count: 0.6,
-          growth_stage: 'R3',
-        },
-      ],
-    }),
-  })
-  const body = await res.json().catch(() => ({}))
-  if (!res.ok) {
-    throw new Error(typeof body.error === 'string' ? body.error : `forecast failed (${res.status})`)
-  }
-  return body as Forecast
-}
-
-export function formatForecastLine(f: Forecast): string {
-  const book = f.recommended_action_date
-    ? ` Book the sprayer for ${shortDate(f.recommended_action_date)}.`
-    : ''
-  return `${f.message}${book}`
-}
-
-function shortDate(iso: string): string {
-  const d = new Date(iso.includes('T') ? iso : `${iso}T12:00:00`)
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }

@@ -102,14 +102,9 @@ Guard rails, all enforced and all tested:
 
 ## The UI
 
-1. **Farm overview** — 5 fields as flat rectangles on black. Hover for health / pest risk.
-2. Click any field — the block scales up to fill the screen.
-3. **Field monitor** — field feed video on the left, live Fresno CA weather on the
-   right (Open-Meteo, no API key, 60 s refresh), **Calculate next spray date** at the bottom.
-
-The calculate button is still stubbed — wiring it to the engine above is the
-remaining integration step (`TODO(ml-team)` in
-[src/components/FieldDetail.tsx](src/components/FieldDetail.tsx)).
+Wired to the engine: pick a field, photograph a filled-in paper scout sheet,
+correct the transcription, get a spray plan. Full walkthrough under
+[The frontend](#the-frontend) below and in [frontend.md](frontend.md).
 
 ## Layout
 
@@ -123,8 +118,11 @@ src/random.ts       seeded RNG and samplers
 src/cli.ts          src/server.ts
 
 src/App.tsx         screen state
-src/components/     FarmOverview, FieldCard, FieldDetail, LiveFeed, WeatherPanel
-src/data/fields.ts  the 5 demo fields
+src/api.ts          browser client for /forecast and /scout/ocr
+src/components/     FarmOverview, FieldCard, FieldDetail, LiveFeed,
+                    WeatherPanel, ScoutPanel, SprayPlan
+src/data/fields.ts  the 5 demo fields; an `engine` block marks the one
+                    field the forecast engine can model
 src/styles.css      all styling
 ```
 
