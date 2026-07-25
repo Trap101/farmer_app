@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import type { Field } from '../data/fields'
+import { forecastForField, formatForecastLine } from '../api'
 import { LiveFeed } from './LiveFeed'
 import { WeatherPanel } from './WeatherPanel'
 
@@ -9,18 +10,23 @@ interface Props {
   onBack: () => void
 }
 
-type CalcState = 'idle' | 'loading' | 'done'
+type CalcState = 'idle' | 'loading' | 'done' | 'error'
 
 export function FieldDetail({ field, onBack }: Props) {
   const [calcState, setCalcState] = useState<CalcState>('idle')
+  const [resultLine, setResultLine] = useState<string | null>(null)
 
   async function handleCalculate() {
     setCalcState('loading')
-    // TODO(ml-team): call the spray-date prediction API here, e.g.
-    //   const res = await fetch('/api/predict', { method: 'POST', body: ... })
-    // For the demo we simulate the round-trip.
-    await new Promise((r) => setTimeout(r, 1800))
-    setCalcState('done')
+    setResultLine(null)
+    try {
+      const forecast = await forecastForField(field)
+      setResultLine(formatForecastLine(forecast))
+      setCalcState('done')
+    } catch (err) {
+      setResultLine(err instanceof Error ? err.message : String(err))
+      setCalcState('error')
+    }
   }
 
   return (
@@ -62,15 +68,14 @@ export function FieldDetail({ field, onBack }: Props) {
 
         <footer className="detail-footer">
           <div className="footer-note">
-            {calcState === 'done' ? (
-              <span className="calc-result">
-                ✓ Optimal window identified — prediction model will populate
-                this once connected.
-              </span>
+            {calcState === 'done' && resultLine ? (
+              <span className="calc-result">✓ {resultLine}</span>
+            ) : calcState === 'error' && resultLine ? (
+              <span className="calc-result calc-result-error">{resultLine}</span>
             ) : (
               <span>
-                Last sprayed {field.lastSprayed}. Model combines feed imagery +
-                weather to find the optimal window.
+                Last sprayed {field.lastSprayed}. Forecast engine on Render
+                recomputes the threshold from price and scouting counts.
               </span>
             )}
           </div>
@@ -84,7 +89,7 @@ export function FieldDetail({ field, onBack }: Props) {
                 <span className="spinner" aria-hidden />
                 Analyzing field conditions…
               </>
-            ) : calcState === 'done' ? (
+            ) : calcState === 'done' || calcState === 'error' ? (
               'Recalculate next spray date'
             ) : (
               'Calculate next spray date'
