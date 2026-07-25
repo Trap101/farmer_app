@@ -5,12 +5,18 @@ interface Props {
   field: Field
 }
 
+// One shared clip stands in for every field's camera in the demo — each
+// field just relabels it (CAM-01 · <FIELD NAME>). Swap the file at
+// public/field-feed.mp4 to change the footage everywhere.
+const FEED_SRC = '/field-feed.mp4'
+
 // Shows the pre-encoded field video styled as a live drone feed.
-// Drop the encoded file at public/field-feed.mp4 — if it's missing
-// (e.g. before the asset lands), an animated canvas NDVI simulation
-// renders instead so the demo never shows a broken player.
+// If the file is missing or the codec won't play, an animated canvas
+// NDVI simulation renders instead so the demo never shows a dead player.
+type FeedState = 'connecting' | 'playing' | 'failed'
+
 export function LiveFeed({ field }: Props) {
-  const [videoAvailable, setVideoAvailable] = useState(true)
+  const [feedState, setFeedState] = useState<FeedState>('connecting')
   const [clock, setClock] = useState(() => new Date())
 
   useEffect(() => {
@@ -29,18 +35,28 @@ export function LiveFeed({ field }: Props) {
       </div>
 
       <div className="feed-frame">
-        {videoAvailable ? (
+        {feedState === 'failed' ? (
+          <SimulatedFeed field={field} />
+        ) : (
           <video
             className="feed-media"
-            src="/field-feed.mp4"
+            src={FEED_SRC}
             autoPlay
             loop
             muted
             playsInline
-            onError={() => setVideoAvailable(false)}
+            onCanPlay={() => setFeedState('playing')}
+            onError={() => setFeedState('failed')}
           />
-        ) : (
-          <SimulatedFeed field={field} />
+        )}
+
+        {/* Reads as a camera acquiring signal rather than a black rectangle
+            while the clip buffers. */}
+        {feedState === 'connecting' && (
+          <div className="feed-connecting">
+            <span className="spinner" aria-hidden />
+            Acquiring CAM-01 signal…
+          </div>
         )}
 
         <div className="feed-overlay">
