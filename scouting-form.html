@@ -1,0 +1,118 @@
+<!doctype html>
+<!-- Blank sheet a grower prints and fills in with a pen. Every field here maps
+     1:1 onto SHEET_SCHEMA in src/scout_ocr.ts — change the two together.
+     Derived from Iowa State Extension 4H-382-A (rev. June 1986); the additions
+     are field id, growth stage, "plants w/ any" and the P/N column. -->
+<meta charset="utf-8" />
+<title>Crop scouting form</title>
+<style>
+  body { font: 12pt/1.4 Georgia, serif; margin: 0.5in; color: #000; }
+  h1 { font-size: 20pt; margin: 0 0 12px; }
+  h2 { font-size: 12pt; margin: 16px 0 4px; }
+  .line { display: inline-block; border-bottom: 1px solid #000; min-width: 140px; }
+  .hdr > div { margin-bottom: 6px; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 4px; }
+  th, td { border: 1px solid #000; padding: 5px 4px; font-size: 10pt; }
+  th { font-weight: normal; font-size: 8.5pt; }
+  td.blank { height: 22px; }
+  .name { width: 26%; }
+  .area { width: 5%; text-align: center; }
+  .note { font-size: 8.5pt; color: #444; margin: 2px 0 0; }
+  @media print { body { margin: 0.4in; } .note { color: #000; } }
+</style>
+
+<h1>Crop scouting form</h1>
+
+<div class="hdr">
+  <div>
+    Crop <span class="line"></span>
+    Date (YYYY-MM-DD) <span class="line"></span>
+    Growth stage <span class="line" style="min-width: 70px"></span>
+  </div>
+  <div>
+    Field name/ID <span class="line"></span>
+    Your name <span class="line"></span>
+  </div>
+  <div>
+    Areas scouted <span class="line" style="min-width: 40px"></span>
+    Plants examined per area <span class="line" style="min-width: 40px"></span>
+    Plant height, avg of 10 (in) <span class="line" style="min-width: 50px"></span>
+  </div>
+  <div>
+    <b>Soil</b> (circle) &mdash; wet &nbsp; moist &nbsp; dry &nbsp;&nbsp;|&nbsp;&nbsp;
+    loose &nbsp; light crust &nbsp; hard crust
+  </div>
+  <div>
+    <b>Weather</b> (circle) &mdash; cool &nbsp; warm &nbsp; hot &nbsp;&nbsp;|&nbsp;&nbsp;
+    calm &nbsp; light &nbsp; strong wind &nbsp;&nbsp;|&nbsp;&nbsp;
+    partly sunny &nbsp; cloudy &nbsp; rainy
+  </div>
+</div>
+
+<h2>Insects found</h2>
+<table>
+  <tr>
+    <th class="name">Name</th>
+    <th style="width: 6%">P&nbsp;/&nbsp;N</th>
+    <th style="width: 8%">Causing damage?</th>
+    <th class="area">1</th><th class="area">2</th><th class="area">3</th>
+    <th class="area">4</th><th class="area">5</th>
+    <th style="width: 22%">Plants w/ any (per area)</th>
+    <th style="width: 7%">%</th>
+  </tr>
+  <tr><td class="blank">1.</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+  <tr><td class="blank">2.</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+  <tr><td class="blank">3.</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+  <tr><td class="blank">4.</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+  <tr><td class="blank">5.</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+  <tr><td class="blank">6.</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+</table>
+<p class="note">
+  P/N: write <b>P</b> for a pest, <b>N</b> for a natural enemy (lady beetle, lacewing,
+  hover fly larva, minute pirate bug, damsel bug, spider, aphid mummy).
+  Count each insect per area; then count how many <i>plants</i> in that area carry
+  any at all &mdash; that second number is what the threshold rule needs.
+</p>
+
+<h2>Disease symptoms found</h2>
+<table>
+  <tr>
+    <th class="name">Name</th>
+    <th class="area">1</th><th class="area">2</th><th class="area">3</th>
+    <th class="area">4</th><th class="area">5</th>
+  </tr>
+  <tr><td class="blank">1.</td><td></td><td></td><td></td><td></td><td></td></tr>
+  <tr><td class="blank">2.</td><td></td><td></td><td></td><td></td><td></td></tr>
+  <tr><td class="blank">3.</td><td></td><td></td><td></td><td></td><td></td></tr>
+  <tr><td class="blank">4.</td><td></td><td></td><td></td><td></td><td></td></tr>
+</table>
+<p class="note">Number of plants showing the symptom, per area.</p>
+
+<h2>Weeds found</h2>
+<table>
+  <tr>
+    <th class="name">Name</th>
+    <th class="area">1</th><th class="area">2</th><th class="area">3</th>
+    <th class="area">4</th><th class="area">5</th>
+  </tr>
+  <tr><td class="blank">1.</td><td></td><td></td><td></td><td></td><td></td></tr>
+  <tr><td class="blank">2.</td><td></td><td></td><td></td><td></td><td></td></tr>
+  <tr><td class="blank">3.</td><td></td><td></td><td></td><td></td><td></td></tr>
+  <tr><td class="blank">4.</td><td></td><td></td><td></td><td></td><td></td></tr>
+</table>
+<p class="note">Number per square metre or square yard, per area.</p>
+
+<h2>Plant population &mdash; good plants per area</h2>
+<table>
+  <tr>
+    <th class="area">1</th><th class="area">2</th><th class="area">3</th>
+    <th class="area">4</th><th class="area">5</th>
+  </tr>
+  <tr><td class="blank"></td><td></td><td></td><td></td><td></td></tr>
+</table>
+
+<h2>Description and comments</h2>
+<div style="border: 1px solid #000; height: 70px"></div>
+<p class="note">
+  Photograph the whole sheet flat, in daylight, and send it to POST /scout/ocr.
+</p>

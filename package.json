@@ -1,5 +1,5 @@
 {
-  "name": "farmer-app-forecast",
+  "name": "spraysense",
   "version": "0.1.0",
   "description": "Predicts the calendar date a pest population crosses its economic threshold",
   "type": "module",
@@ -8,17 +8,12 @@
     "node": ">=22.18"
   },
   "scripts": {
-    "test": "node --test \"test/**/*.test.ts\"",
-    "demo": "node src/cli.ts demo.json",
-    "serve": "node src/server.ts"
-  "name": "spraysense",
-  "private": true,
-  "version": "0.1.0",
-  "type": "module",
-  "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "node --test \"test/**/*.test.ts\"",
+    "demo": "node src/cli.ts demo.json",
+    "serve": "node --env-file-if-exists=.env src/server.ts"
   },
   "dependencies": {
     "framer-motion": "^11.11.9",
@@ -26,6 +21,7 @@
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@types/node": "^26.1.1",
     "@types/react": "^18.3.11",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.2",

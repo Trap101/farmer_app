@@ -3,7 +3,7 @@
 Read this before touching `src/`. It tells you what exists, what to build next, and
 which four things will silently break if you "clean them up".
 
-**State:** working end to end. 29 tests green. Branch `feat/forecast-engine` pushed
+**State:** working end to end. 35 tests green. Branch `feat/forecast-engine` pushed
 to `Trap101/farmer_app`, no PR opened yet.
 
 ---
@@ -11,8 +11,10 @@ to `Trap101/farmer_app`, no PR opened yet.
 ## What this is
 
 A forecasting engine that predicts the calendar date a soybean aphid population
-crosses its economic threshold. A human scout supplies counts; there is no computer
-vision anywhere in this and none is planned.
+crosses its economic threshold. A human scout supplies counts — on paper, which
+`POST /scout/ocr` transcribes with Gemini (`src/scout_ocr.ts`). There is no
+computer vision on the crop itself and none is planned; the model reads
+handwriting, not aphids.
 
 The one thing that makes it not-a-spreadsheet: **the threshold is computed from the
 grower's live crop price and spray cost**, not hard-coded at the industry-standard
@@ -84,6 +86,56 @@ Errors return `{"error": "..."}` with a 4xx. `GET /health` → `{"ok":true}`.
 
 ---
 
+## The paper sheet: `POST /scout/ocr`
+
+Growers scout with a clipboard. `src/scout_ocr.ts` sends a photo of the filled-in
+sheet to Gemini with a `responseSchema` and returns the transcription plus a ready
+`Observation`. Needs `GEMINI_API_KEY`; `GEMINI_MODEL` overrides the default.
+
+```bash
+curl -s localhost:8787/scout/ocr -H 'content-type: application/json' \
+  -d '{"image_base64":"<jpeg or png>","mime_type":"image/jpeg","pest":"aphid"}'
+# -> { sheet, observation, warnings }
+```
+
+`observation` drops straight into the `observations` array of `POST /forecast`. It
+is `null` whenever the sheet is missing something the engine cannot run without,
+and `warnings` says which — the UI should show the sheet, the warnings, and let the
+scout fix them by hand rather than sending a half-read sheet to the forecast.
+
+`GET /form` serves `scouting-form.html`, the blank sheet to print. It is Iowa State
+Extension 4H-382-A plus five fields that sheet lacks and the engine needs: field id,
+growth stage, plants examined per area, plants-carrying-any per area, and a P/N
+(pest / natural enemy) column. **The HTML and `SHEET_SCHEMA` are one artefact in two
+files — change them together.**
+
+### Three ways this goes silently wrong
+
+**1. 4H-382-A's own % column is not percent of plants infested.** Its instruction f
+says total insects / total plants, which is >100% in any real outbreak. The engine's
+≥80% conjunction gate would then fire on arithmetic instead of on observation, so
+the mapper never substitutes it — a sheet without the per-area
+plants-carrying-any counts returns `observation: null`. That is the whole reason the
+new column exists. Guarded by `test/scout_ocr.test.ts`.
+
+**2. Role beats name when matching the pest.** "Aphid mummies" and "aphid midge" are
+natural enemies whose names contain the pest's. Counting them as aphids inflates
+density exactly when biological control is working. Any row the model marks
+`predator` is excluded from the pest total, name match or not.
+
+**3. Nothing is inferred on the grower's behalf.** Blank stays null and lands in
+`warnings`. `n_plants_sampled` drives the confidence interval, so a plausible
+guessed value silently narrows it — the one number a demo would never notice being
+wrong. The single exception is `plants_per_area`, which falls back to the sheet's
+own printed default of 20 and says so in `warnings`.
+
+Verified live against a rendered filled-in sheet: all four header fields, three
+circled weather/soil options, both insect tables and the P/N roles transcribed
+exactly, into `{count_per_plant: 180, n_plants_sampled: 100, pct_plants_infested: 92,
+predator_count: 0.6}` → `CROSSING_SOON`, book the sprayer for Jul 28.
+
+---
+
 ## Do not undo these four things
 
 Each of these looks like a mistake, is deliberate, and has a test guarding it. If a
@@ -120,7 +172,9 @@ directory picks it up and it fails.
 Roughly in order of value.
 
 **1. Wire up the frontend.** The engine is done and the contract above is stable.
-This is the only thing standing between here and a demo.
+This is the only thing standing between here and a demo. The scout flow it should
+implement: print `/form`, photo, `POST /scout/ocr`, show the transcription for the
+scout to correct, then `POST /forecast`.
 
 **2. Open a PR.** Branch is pushed, nothing exists on GitHub yet.
 

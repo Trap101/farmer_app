@@ -14,6 +14,47 @@ export interface Observation {
   growth_stage: string;
 }
 
+/** One row of the insect / disease / weed tables on a paper scouting sheet. */
+export interface ScoutRow {
+  name: string;
+  role?: "pest" | "predator" | "neutral" | "unknown";
+  causing_damage?: boolean | null;
+  /** One entry per scouted area, in written order. */
+  counts?: number[];
+  /** Plants in that area carrying any of this insect. Not on 4H-382-A. */
+  plants_infested?: number[] | null;
+  /** The % column as written. See the landmine note in scout_ocr.ts. */
+  pct_written?: number | null;
+  plants_affected?: number[];
+  counts_per_sq_m?: number[];
+}
+
+/** A transcribed paper scouting sheet. Every field may be missing. */
+export interface ScoutingSheet {
+  crop?: string | null;
+  /** ISO date, YYYY-MM-DD. */
+  date?: string | null;
+  scout_name?: string | null;
+  field_id?: string | null;
+  growth_stage?: string | null;
+  areas_scouted?: number | null;
+  plants_per_area?: number | null;
+  plant_height_in?: number | null;
+  soil_moisture?: "wet" | "moist" | "dry" | null;
+  soil_condition?: "loose" | "light crust" | "hard crust" | null;
+  air_temp?: "cool" | "warm" | "hot" | null;
+  wind?: "calm" | "light" | "strong" | null;
+  sky?: "partly sunny" | "cloudy" | "rainy" | null;
+  insects: ScoutRow[];
+  diseases: ScoutRow[];
+  weeds: ScoutRow[];
+  plant_population?: number[] | null;
+  comments?: string | null;
+  legibility: "clear" | "partly illegible" | "mostly illegible";
+  /** Labels of anything present on the paper but unreadable. */
+  unreadable: string[];
+}
+
 export type ReasonCode =
   | "BELOW_THRESHOLD"
   | "PREDATOR_SUPPRESSED"
