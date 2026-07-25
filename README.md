@@ -3,7 +3,8 @@
 Predicts the calendar date a soybean aphid population will cross its economic
 threshold, so a grower can book the sprayer instead of spraying prophylactically.
 
-Counts come from a human scout. No computer vision.
+Counts come from a human scout, on paper. Photograph the filled-in sheet and
+`POST /scout/ocr` transcribes it (Gemini) into the counts the engine takes.
 
 ```
 $ npm run demo
@@ -40,10 +41,11 @@ Needs **Node ≥ 22.18**. No `npm install` — there are no dependencies. Node r
 TypeScript directly and `node --test` is the test runner.
 
 ```bash
-npm test                      # 29 tests
+npm test                      # 35 tests
 npm run demo                  # the screen above (hits Open-Meteo)
 node src/cli.ts demo.json --json
-npm run serve                 # POST /forecast on :8787
+npm run serve                 # POST /forecast, POST /scout/ocr on :8787
+                              # /scout/ocr needs GEMINI_API_KEY
 ```
 
 ```bash
