@@ -1,13 +1,62 @@
 // node src/server.ts
 //
 // All logic lives in forecast.ts / scout_ocr.ts — this only moves JSON.
+// Also serves the Vite build from dist/ so one Render service hosts everything.
 
 import { createServer } from "node:http";
-import { readFile } from "node:fs/promises";
+import { readFile, stat } from "node:fs/promises";
+import { join, normalize, extname } from "node:path";
+import { fileURLToPath } from "node:url";
 import { forecastCrossing } from "./forecast.ts";
 import { extractScoutingSheet, sheetToObservation } from "./scout_ocr.ts";
 
 const PORT = Number(process.env.PORT ?? 8787);
+const ROOT = fileURLToPath(new URL("..", import.meta.url));
+const DIST = join(ROOT, "dist");
+
+const MIME: Record<string, string> = {
+  ".html": "text/html; charset=utf-8",
+  ".js": "text/javascript; charset=utf-8",
+  ".css": "text/css; charset=utf-8",
+  ".json": "application/json",
+  ".svg": "image/svg+xml",
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".webp": "image/webp",
+  ".mp4": "video/mp4",
+  ".ico": "image/x-icon",
+  ".woff2": "font/woff2",
+};
+
+async function serveFile(res: import("node:http").ServerResponse, filePath: string) {
+  const body = await readFile(filePath);
+  res.writeHead(200, { "content-type": MIME[extname(filePath)] ?? "application/octet-stream" });
+  res.end(body);
+}
+
+async function serveStatic(res: import("node:http").ServerResponse, urlPath: string) {
+  const rel = urlPath === "/" ? "index.html" : urlPath.replace(/^\//, "");
+  const filePath = normalize(join(DIST, rel));
+  if (!filePath.startsWith(DIST)) {
+    res.writeHead(403).end();
+    return;
+  }
+  try {
+    const s = await stat(filePath);
+    if (s.isFile()) return serveFile(res, filePath);
+  } catch {
+    /* fall through */
+  }
+  // SPA-style fallback when dist exists; otherwise a clear 404.
+  try {
+    await stat(join(DIST, "index.html"));
+    return serveFile(res, join(DIST, "index.html"));
+  } catch {
+    res.writeHead(404, { "content-type": "application/json" });
+    res.end(JSON.stringify({ error: "POST /forecast or POST /scout/ocr, GET /form, GET /" }));
+  }
+}
 
 const server = createServer(async (req, res) => {
   const send = (status: number, body: unknown) => {
@@ -19,17 +68,21 @@ const server = createServer(async (req, res) => {
     res.end(JSON.stringify(body));
   };
 
+  const url = req.url?.split("?")[0] ?? "/";
+
   if (req.method === "OPTIONS") return send(204, null);
-  if (req.method === "GET" && req.url === "/health") return send(200, { ok: true });
+  if (req.method === "GET" && url === "/health") return send(200, { ok: true });
 
   // The blank sheet a grower prints, fills in with a pen, and photographs.
-  if (req.method === "GET" && req.url === "/form") {
-    const html = await readFile(new URL("../scouting-form.html", import.meta.url));
+  if (req.method === "GET" && url === "/form") {
+    const html = await readFile(join(ROOT, "scouting-form.html"));
     res.writeHead(200, { "content-type": "text/html; charset=utf-8" });
     return res.end(html);
   }
 
-  if (req.method !== "POST" || !["/forecast", "/scout/ocr"].includes(req.url ?? "")) {
+  if (req.method === "GET") return serveStatic(res, url);
+
+  if (req.method !== "POST" || !["/forecast", "/scout/ocr"].includes(url)) {
     return send(404, { error: "POST /forecast or POST /scout/ocr, GET /form" });
   }
 
@@ -41,7 +94,7 @@ const server = createServer(async (req, res) => {
     if (raw.byteLength > 12e6) return send(413, { error: "body too large" });
     const body = JSON.parse(raw.toString("utf8"));
 
-    if (req.url === "/scout/ocr") {
+    if (url === "/scout/ocr") {
       const data = String(body.image_base64 ?? "").replace(/^data:[^,]*,/, "");
       if (!data) return send(400, { error: "image_base64 is required" });
       const sheet = await extractScoutingSheet({ data, mime_type: body.mime_type });
@@ -64,4 +117,4 @@ const server = createServer(async (req, res) => {
   }
 });
 
-server.listen(PORT, () => console.log(`forecast engine on http://localhost:${PORT}`));
+server.listen(PORT, "0.0.0.0", () => console.log(`spraysense on http://0.0.0.0:${PORT}`));
