@@ -1,8 +1,33 @@
-# farmer_app — threshold crossing forecast engine
+# SpraySense
 
-Predicts the calendar date a soybean aphid population will cross its economic
-threshold, so a grower can book the sprayer instead of spraying prophylactically.
+Tells a grower the date to spray, instead of spraying on a calendar schedule.
 
+Two halves in one repo:
+
+- **Forecast engine** (`src/*.ts`, `test/`) — predicts the calendar date a soybean
+  aphid population crosses its economic threshold. Deep docs: [BACKEND.md](BACKEND.md).
+- **Field monitor UI** (`src/App.tsx`, `src/components/`) — the demo frontend: farm
+  overview, per-field live feed, live weather. Deep docs: [frontend.md](frontend.md).
+
+## Running it
+
+Needs **Node ≥ 22.18**.
+
+```bash
+npm install        # frontend deps (React, Vite); the engine itself has none
+npm run dev        # UI on http://localhost:5173
+```
+
+```bash
+npm test           # 29 engine tests
+npm run demo       # the engine's CLI demo (hits Open-Meteo)
+npm run serve      # POST /forecast on :8787
+```
+
+Node runs the engine's TypeScript directly — `npm run build` typechecks and bundles
+the frontend only.
+
+## The engine
 Counts come from a human scout, on paper. Photograph the filled-in sheet and
 `POST /scout/ocr` transcribes it (Gemini) into the counts the engine takes.
 
@@ -17,8 +42,6 @@ Median crossing: Jul 31 (80% CI Jul 27 - Aug 4)
 Book the sprayer for Jul 27.
 ```
 
-## The point
-
 Most tools hard-code the threshold at 250 aphids/plant. That number is a 2003
 consensus rule of thumb, and at today's prices it can be off by ±40%. This engine
 recomputes it from the grower's actual crop price and spray cost using the equation
@@ -32,9 +55,12 @@ forecast temperature error turns that into a date distribution rather than a poi
 estimate. The interval width is the product — it tells the grower how much the next
 scouting visit is worth.
 
+Counts come from a human scout. No computer vision.
+
 Where the research contradicted the spec it was built from, the corrections and
 their sources are in [NOTES.md](NOTES.md).
 
+### Interface
 ## Running it
 
 Needs **Node ≥ 22.18**. No `npm install` — there are no dependencies. Node runs the
@@ -74,6 +100,17 @@ Guard rails, all enforced and all tested:
 | Population flat or declining | Never recommends spraying |
 | Predators ≥1 per 50 aphids | `PREDATOR_SUPPRESSED` |
 
+## The UI
+
+1. **Farm overview** — 5 fields as flat rectangles on black. Hover for health / pest risk.
+2. Click any field — the block scales up to fill the screen.
+3. **Field monitor** — field feed video on the left, live Fresno CA weather on the
+   right (Open-Meteo, no API key, 60 s refresh), **Calculate next spray date** at the bottom.
+
+The calculate button is still stubbed — wiring it to the engine above is the
+remaining integration step (`TODO(ml-team)` in
+[src/components/FieldDetail.tsx](src/components/FieldDetail.tsx)).
+
 ## Layout
 
 ```
@@ -84,6 +121,11 @@ src/forecast.ts     Monte Carlo, guard rails, assembles the Forecast
 src/weather.ts      Open-Meteo client with disk cache
 src/random.ts       seeded RNG and samplers
 src/cli.ts          src/server.ts
+
+src/App.tsx         screen state
+src/components/     FarmOverview, FieldCard, FieldDetail, LiveFeed, WeatherPanel
+src/data/fields.ts  the 5 demo fields
+src/styles.css      all styling
 ```
 
 Sources are cited inline at each constant. [BRIEF.md](BRIEF.md) is the original
