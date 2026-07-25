@@ -651,6 +651,10 @@ button {
   font-weight: 600;
 }
 
+.calc-result-error {
+  color: #e07070;
+}
+
 .calc-btn {
   display: inline-flex;
   align-items: center;
