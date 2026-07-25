@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import type { Field } from '../data/fields'
 import { LiveFeed } from './LiveFeed'
@@ -25,25 +25,31 @@ export function FieldDetail({ field, onBack }: Props) {
   const [forecast, setForecast] = useState<Forecast | null>(null)
   const [running, setRunning] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const planRef = useRef<HTMLDivElement>(null)
+  // Skip the empty-mount run; only forecast after the scout confirms (or removes) visits.
+  const skipAuto = useRef(true)
 
   const engine = field.engine
 
-  async function handleCalculate() {
-    if (!engine) return
+  async function runPlan(obs: Observation[]) {
+    if (!engine || obs.length === 0) {
+      setForecast(null)
+      return
+    }
     setRunning(true)
     setError(null)
+    setForecast(null)
     try {
-      setForecast(
-        await runForecast({
-          lat: engine.lat,
-          lon: engine.lon,
-          crop_price: CROP_PRICE,
-          spray_cost_per_acre: SPRAY_COST,
-          yield_potential_bu_ac: YIELD_POTENTIAL,
-          seed: SEED,
-          observations,
-        }),
-      )
+      const next = await runForecast({
+        lat: engine.lat,
+        lon: engine.lon,
+        crop_price: CROP_PRICE,
+        spray_cost_per_acre: SPRAY_COST,
+        yield_potential_bu_ac: YIELD_POTENTIAL,
+        seed: SEED,
+        observations: obs,
+      })
+      setForecast(next)
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))
       setForecast(null)
@@ -51,6 +57,21 @@ export function FieldDetail({ field, onBack }: Props) {
       setRunning(false)
     }
   }
+
+  useEffect(() => {
+    if (skipAuto.current) {
+      skipAuto.current = false
+      return
+    }
+    void runPlan(observations)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: only when visits change
+  }, [observations])
+
+  useEffect(() => {
+    if (forecast && planRef.current) {
+      planRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+    }
+  }, [forecast])
 
   return (
     <motion.div
@@ -95,11 +116,9 @@ export function FieldDetail({ field, onBack }: Props) {
                 setObservations((prev) =>
                   [...prev, o].sort((a, b) => a.date.localeCompare(b.date)),
                 )
-                setForecast(null)
               }}
               onRemove={(i) => {
                 setObservations((prev) => prev.filter((_, j) => j !== i))
-                setForecast(null)
               }}
             />
           ) : (
@@ -107,8 +126,15 @@ export function FieldDetail({ field, onBack }: Props) {
           )}
         </div>
 
+        {engine && running && !forecast && (
+          <div className="plan-loading" role="status">
+            <span className="spinner" aria-hidden />
+            Working out spray / re-scout / dollars…
+          </div>
+        )}
+
         {engine && forecast && (
-          <div className="detail-plan">
+          <div className="detail-plan" ref={planRef}>
             <SprayPlan
               forecast={forecast}
               sprayCostPerAcre={SPRAY_COST}
@@ -134,10 +160,12 @@ export function FieldDetail({ field, onBack }: Props) {
               </span>
             ) : observations.length === 0 ? (
               <span>
-                Photograph a filled-in scout sheet to begin. Threshold is
-                recomputed from ${CROP_PRICE.toFixed(2)}/bu and $
-                {SPRAY_COST.toFixed(2)}/acre — not the 250/plant rule of thumb.
+                Photograph a filled-in scout sheet. You&apos;ll get a clear
+                answer on spray, re-scout, and dollars saved — threshold from $
+                {CROP_PRICE.toFixed(2)}/bu and ${SPRAY_COST.toFixed(2)}/acre.
               </span>
+            ) : running ? (
+              <span>Updating the plan from your latest visit…</span>
             ) : (
               <span>
                 {observations.length} visit{observations.length > 1 ? 's' : ''}{' '}
@@ -145,23 +173,19 @@ export function FieldDetail({ field, onBack }: Props) {
               </span>
             )}
           </div>
-          {engine && (
+          {engine && observations.length > 0 && (
             <button
               className={`calc-btn ${running ? 'calc-btn-loading' : ''}`}
-              onClick={handleCalculate}
-              disabled={running || observations.length === 0}
+              onClick={() => void runPlan(observations)}
+              disabled={running}
             >
               {running ? (
                 <>
                   <span className="spinner" aria-hidden />
-                  Running forecast…
+                  Updating…
                 </>
-              ) : forecast ? (
-                'Recalculate spray plan'
-              ) : observations.length === 0 ? (
-                'Add a scout sheet first'
               ) : (
-                'Calculate next spray date'
+                'Recalculate'
               )}
             </button>
           )}

@@ -932,6 +932,19 @@ button {
 
 .detail-plan { margin-top: 14px; }
 
+.plan-loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+  padding: 16px 18px;
+  border-radius: 12px;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
 .reason-chip {
   font-family: var(--font-mono);
   font-size: 10.5px;
@@ -953,31 +966,75 @@ button {
   color: var(--text);
 }
 
-.plan-headline {
+.decision-board {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+@media (max-width: 720px) {
+  .decision-board { grid-template-columns: 1fr; }
+}
+
+.decision {
   display: flex;
-  align-items: baseline;
-  gap: 12px;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 6px;
   padding: 14px 16px;
   border-radius: 12px;
   background: var(--bg-raise);
+  border: 1px solid transparent;
 }
 
-.plan-headline-label {
-  font-size: 11px;
+.decision-good { border-color: rgba(87, 200, 77, 0.28); }
+.decision-caution { border-color: rgba(245, 194, 17, 0.28); }
+.decision-bad { border-color: rgba(228, 87, 46, 0.32); }
+.decision-neutral { border-color: var(--panel-border); }
+
+.decision-label {
+  font-size: 10.5px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--text-dim);
 }
 
-.plan-headline-date {
+.decision-answer,
+.decision-money {
   font-family: var(--font-mono);
-  font-size: 26px;
-  font-weight: 600;
-  color: var(--accent);
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  color: var(--text);
 }
 
-.plan-headline-hold { font-size: 17px; color: var(--text-dim); }
+.decision-good .decision-answer,
+.decision-good .decision-money { color: var(--accent); }
+
+.decision-caution .decision-answer,
+.decision-caution .decision-money { color: var(--amber); }
+
+.decision-bad .decision-answer,
+.decision-bad .decision-money { color: var(--red); }
+
+.decision-detail {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-dim);
+}
+
+.plan-details {
+  margin-top: 2px;
+}
+
+.plan-details summary,
+.citations summary {
+  font-size: 11.5px;
+  color: var(--text-dim);
+  cursor: pointer;
+}
+
+.plan-details[open] summary { margin-bottom: 10px; }
 
 /* 14-day strip */
 .calendar {
@@ -1071,12 +1128,6 @@ button {
   font-size: 11.5px;
   font-style: italic;
   color: var(--text-dim);
-}
-
-.citations summary {
-  font-size: 11.5px;
-  color: var(--text-dim);
-  cursor: pointer;
 }
 
 .citations ul {

@@ -1,5 +1,4 @@
 import {
-  REASON_LABEL,
   canBookSprayer,
   formatDate,
   toneFor,
@@ -23,134 +22,291 @@ function calendarDays(): string[] {
   )
 }
 
+type SprayAnswer = {
+  answer: 'Yes' | 'No' | 'Book'
+  detail: string
+  tone: 'good' | 'caution' | 'bad' | 'neutral'
+}
+
+type RescoutAnswer = {
+  answer: 'Yes' | 'No'
+  detail: string
+}
+
+type MoneyAnswer = {
+  dollars: number
+  label: string
+  detail: string
+  tone: 'good' | 'caution' | 'bad' | 'neutral'
+}
+
+function sprayDecision(f: Forecast): SprayAnswer {
+  switch (f.reason_code) {
+    case 'ABOVE_THRESHOLD':
+      return {
+        answer: 'Yes',
+        detail: 'Spray today — counts are at or above your economic threshold.',
+        tone: 'bad',
+      }
+    case 'CROSSING_SOON':
+      return {
+        answer: 'Book',
+        detail: `Do not spray today. Book the sprayer for ${formatDate(f.recommended_action_date)}.`,
+        tone: 'caution',
+      }
+    case 'STAGE_PAST_BENEFIT':
+      return {
+        answer: 'No',
+        detail: 'Past mid-late R6 — spraying will not add yield.',
+        tone: 'good',
+      }
+    case 'PREDATOR_SUPPRESSED':
+      return {
+        answer: 'No',
+        detail: 'Predators are holding the population. Hold the spray.',
+        tone: 'good',
+      }
+    case 'BELOW_THRESHOLD':
+      return {
+        answer: 'No',
+        detail: 'Below threshold and not crossing this week. Hold the spray.',
+        tone: 'good',
+      }
+    case 'INSUFFICIENT_DATA':
+      return {
+        answer: 'No',
+        detail: 'Not enough visits yet to justify a spray call.',
+        tone: 'neutral',
+      }
+    case 'IMPLAUSIBLE_GROWTH':
+      return {
+        answer: 'No',
+        detail: 'Counts look off — re-check before spraying.',
+        tone: 'neutral',
+      }
+  }
+}
+
+function rescoutDecision(f: Forecast): RescoutAnswer {
+  switch (f.reason_code) {
+    case 'ABOVE_THRESHOLD':
+      return { answer: 'No', detail: 'Act on the spray first; scout after.' }
+    case 'CROSSING_SOON':
+      return {
+        answer: 'Yes',
+        detail: 'Re-scout 2–3 days before the booked date to confirm.',
+      }
+    case 'INSUFFICIENT_DATA':
+      return { answer: 'Yes', detail: 'Scout again in 3–5 days to lock in a growth rate.' }
+    case 'IMPLAUSIBLE_GROWTH':
+      return { answer: 'Yes', detail: 'Re-check counts and visit dates before acting.' }
+    case 'STAGE_PAST_BENEFIT':
+      return { answer: 'No', detail: 'Season window for spraying is closed.' }
+    default:
+      return { answer: 'Yes', detail: 'Re-scout in 5–7 days.' }
+  }
+}
+
+/**
+ * Grower-facing dollars. Holding off a pass = money saved. Spraying = cost of
+ * the pass. If the 250 rule would have sprayed but the price-driven ET says
+ * wait, call that out explicitly.
+ */
+function moneyDecision(
+  f: Forecast,
+  sprayCostPerAcre: number,
+  acres: number,
+): MoneyAnswer {
+  const total = Math.round(sprayCostPerAcre * acres)
+  const count = f.latest_count
+  const et = f.threshold.et_aphids
+  const consensus = f.threshold.et_consensus
+  const consensusWouldSpray = Number.isFinite(et) && count >= consensus
+  const holding =
+    f.reason_code === 'BELOW_THRESHOLD' ||
+    f.reason_code === 'PREDATOR_SUPPRESSED' ||
+    f.reason_code === 'STAGE_PAST_BENEFIT' ||
+    f.reason_code === 'CROSSING_SOON' ||
+    f.reason_code === 'INSUFFICIENT_DATA'
+
+  if (f.reason_code === 'ABOVE_THRESHOLD') {
+    return {
+      dollars: total,
+      label: 'Cost of this spray',
+      detail: `$${sprayCostPerAcre.toFixed(0)}/ac × ${acres} ac — spray while it still pays.`,
+      tone: 'bad',
+    }
+  }
+
+  if (holding && consensusWouldSpray && count < et) {
+    return {
+      dollars: total,
+      label: 'Saved vs the 250 rule',
+      detail: `${count.toFixed(0)}/plant is under your ${et.toFixed(0)} threshold, but the old 250 rule would have sprayed.`,
+      tone: 'good',
+    }
+  }
+
+  if (f.reason_code === 'CROSSING_SOON') {
+    return {
+      dollars: total,
+      label: 'Held for now',
+      detail: `Don't spend $${total.toLocaleString()} today — book for ${formatDate(f.recommended_action_date)}.`,
+      tone: 'caution',
+    }
+  }
+
+  if (f.reason_code === 'IMPLAUSIBLE_GROWTH') {
+    return {
+      dollars: total,
+      label: 'At stake',
+      detail: `Confirm counts before committing $${total.toLocaleString()} to a pass.`,
+      tone: 'neutral',
+    }
+  }
+
+  return {
+    dollars: total,
+    label: 'Saved by not spraying',
+    detail: `A full-field pass would cost $${sprayCostPerAcre.toFixed(0)}/ac.`,
+    tone: 'good',
+  }
+}
+
 export function SprayPlan({ forecast: f, sprayCostPerAcre, acres }: Props) {
   const days = calendarDays()
   const book = canBookSprayer(f)
   const [ciLo, ciHi] = f.cross_date_ci80 ?? [null, null]
-  const tone = toneFor(f.reason_code)
+  const spray = sprayDecision(f)
+  const rescout = rescoutDecision(f)
+  const money = moneyDecision(f, sprayCostPerAcre, acres)
 
   return (
     <section className="panel plan-panel">
       <div className="panel-header">
-        <h3>Spray plan</h3>
-        <span className={`reason-chip reason-${tone}`}>
-          {REASON_LABEL[f.reason_code]}
+        <h3>What to do</h3>
+        <span className={`reason-chip reason-${toneFor(f.reason_code)}`}>
+          {spray.answer === 'Yes'
+            ? 'Spray now'
+            : spray.answer === 'Book'
+              ? 'Book sprayer'
+              : 'Hold spray'}
         </span>
       </div>
 
-      {/* Pre-written by the engine and safe to render verbatim. */}
       <p className="plan-message">{f.message}</p>
 
-      <div className="plan-headline">
-        {book ? (
-          <>
-            <span className="plan-headline-label">Book the sprayer for</span>
-            <strong className="plan-headline-date">
-              {formatDate(f.recommended_action_date)}
-            </strong>
-          </>
-        ) : (
-          <>
-            <span className="plan-headline-label">
-              {f.reason_code === 'ABOVE_THRESHOLD' ? 'Action' : 'No booking yet'}
+      <div className="decision-board" role="group" aria-label="Spray decisions">
+        <Decision
+          label="Spray today?"
+          answer={spray.answer}
+          detail={spray.detail}
+          tone={spray.tone}
+        />
+        <Decision
+          label="Re-scout needed?"
+          answer={rescout.answer}
+          detail={rescout.detail}
+          tone={rescout.answer === 'Yes' ? 'caution' : 'good'}
+        />
+        <div className={`decision decision-${money.tone}`}>
+          <span className="decision-label">{money.label}</span>
+          <strong className="decision-money">
+            ${money.dollars.toLocaleString()}
+          </strong>
+          <span className="decision-detail">{money.detail}</span>
+        </div>
+      </div>
+
+      {(book || f.cross_date_ci80) && (
+        <>
+          <div className="calendar" role="img" aria-label={calendarLabel(f)}>
+            {days.map((d) => {
+              const t = utc(d)
+              const inBand = ciLo && ciHi && t >= utc(ciLo) && t <= utc(ciHi)
+              const isMedian = f.median_cross_date === d
+              const isBook = book && f.recommended_action_date === d
+              const isToday = d === days[0]
+              return (
+                <div
+                  key={d}
+                  className={[
+                    'cal-day',
+                    inBand ? 'cal-band' : '',
+                    isMedian ? 'cal-median' : '',
+                    isBook ? 'cal-book' : '',
+                    isToday ? 'cal-today' : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' ')}
+                  title={`${d}${isBook ? ' — book sprayer' : ''}${
+                    isMedian ? ' — median crossing' : ''
+                  }`}
+                >
+                  <span className="cal-dow">
+                    {new Date(t).toLocaleDateString('en-US', {
+                      weekday: 'narrow',
+                      timeZone: 'UTC',
+                    })}
+                  </span>
+                  <span className="cal-num">
+                    {new Date(t).toLocaleDateString('en-US', {
+                      day: 'numeric',
+                      timeZone: 'UTC',
+                    })}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+          <div className="cal-legend">
+            {book && (
+              <span>
+                <i className="swatch swatch-book" /> book sprayer
+              </span>
+            )}
+            <span>
+              <i className="swatch swatch-median" /> median crossing
             </span>
-            <strong className="plan-headline-date plan-headline-hold">
-              {f.reason_code === 'STAGE_PAST_BENEFIT'
-                ? 'Crop past benefit'
-                : 'Re-scout in 5–7 days'}
-            </strong>
-          </>
-        )}
-      </div>
+            <span>
+              <i className="swatch swatch-band" /> 80% interval
+            </span>
+          </div>
+        </>
+      )}
 
-      {/* 14-day strip. Band = 80% crossing interval, ring = median crossing,
-          filled = the recommended booking date. */}
-      <div className="calendar" role="img" aria-label={calendarLabel(f)}>
-        {days.map((d) => {
-          const t = utc(d)
-          const inBand = ciLo && ciHi && t >= utc(ciLo) && t <= utc(ciHi)
-          const isMedian = f.median_cross_date === d
-          const isBook = book && f.recommended_action_date === d
-          const isToday = d === days[0]
-          return (
-            <div
-              key={d}
-              className={[
-                'cal-day',
-                inBand ? 'cal-band' : '',
-                isMedian ? 'cal-median' : '',
-                isBook ? 'cal-book' : '',
-                isToday ? 'cal-today' : '',
-              ]
-                .filter(Boolean)
-                .join(' ')}
-              title={`${d}${isBook ? ' — book sprayer' : ''}${
-                isMedian ? ' — median crossing' : ''
-              }`}
-            >
-              <span className="cal-dow">
-                {new Date(t).toLocaleDateString('en-US', {
-                  weekday: 'narrow',
-                  timeZone: 'UTC',
-                })}
-              </span>
-              <span className="cal-num">
-                {new Date(t).toLocaleDateString('en-US', {
-                  day: 'numeric',
-                  timeZone: 'UTC',
-                })}
-              </span>
-            </div>
-          )
-        })}
-      </div>
-
-      <div className="cal-legend">
-        <span><i className="swatch swatch-book" /> book sprayer</span>
-        <span><i className="swatch swatch-median" /> median crossing</span>
-        <span><i className="swatch swatch-band" /> 80% interval</span>
-      </div>
-
-      <div className="plan-metrics">
-        <Metric
-          label="Crossing window"
-          value={ciLo && ciHi ? `${formatDate(ciLo)} – ${formatDate(ciHi)}` : 'None in horizon'}
-          sub={`median ${formatDate(f.median_cross_date)}`}
-        />
-        <Metric
-          label="Chance within 7 d"
-          value={`${Math.round(f.p_cross_within_7d * 100)}%`}
-          sub={`latest count ${f.latest_count.toFixed(0)}/plant`}
-        />
-        <Metric
-          label="Threshold applied"
-          value={`${f.threshold.et_aphids.toFixed(0)}/plant`}
-          sub={thresholdSub(f)}
-        />
-        <Metric
-          label="Growth rate"
-          value={`${f.rho_per_dd.toFixed(4)}/DD`}
-          sub={`80% CI ${f.rho_ci[0].toFixed(4)}–${f.rho_ci[1].toFixed(4)}`}
-        />
-        <Metric
-          label="Spray cost"
-          value={`$${sprayCostPerAcre.toFixed(2)}/ac`}
-          sub={`$${(sprayCostPerAcre * acres).toFixed(0)} over ${acres} ac`}
-        />
-        <Metric
-          label="Break-even loss"
-          value={`${f.threshold.gain_threshold_pct.toFixed(2)}%`}
-          sub={`EIL ${f.threshold.eil_aphids.toFixed(0)}/plant`}
-        />
-      </div>
-
-      <p className="plan-interval-note">
-        The interval width is the point: a wider band means the next scouting
-        visit is worth more.
-      </p>
+      <details className="plan-details">
+        <summary>Show the numbers behind this</summary>
+        <div className="plan-metrics">
+          <Metric
+            label="Your count"
+            value={`${f.latest_count.toFixed(0)}/plant`}
+            sub={`${Math.round(f.p_cross_within_7d * 100)}% chance of crossing in 7 days`}
+          />
+          <Metric
+            label="Your threshold"
+            value={`${Number.isFinite(f.threshold.et_aphids) ? f.threshold.et_aphids.toFixed(0) : '—'}/plant`}
+            sub={thresholdSub(f)}
+          />
+          <Metric
+            label="Crossing window"
+            value={
+              ciLo && ciHi
+                ? `${formatDate(ciLo)} – ${formatDate(ciHi)}`
+                : 'None in horizon'
+            }
+            sub={`median ${formatDate(f.median_cross_date)}`}
+          />
+          <Metric
+            label="Spray cost"
+            value={`$${sprayCostPerAcre.toFixed(2)}/ac`}
+            sub={`$${(sprayCostPerAcre * acres).toFixed(0)} over ${acres} ac`}
+          />
+        </div>
+      </details>
 
       <details className="citations">
-        <summary>Sources for these numbers ({f.citations.length})</summary>
+        <summary>Sources ({f.citations.length})</summary>
         <ul>
           {f.citations.map((c) => (
             <li key={c}>{c}</li>
@@ -158,6 +314,26 @@ export function SprayPlan({ forecast: f, sprayCostPerAcre, acres }: Props) {
         </ul>
       </details>
     </section>
+  )
+}
+
+function Decision({
+  label,
+  answer,
+  detail,
+  tone,
+}: {
+  label: string
+  answer: string
+  detail: string
+  tone: 'good' | 'caution' | 'bad' | 'neutral'
+}) {
+  return (
+    <div className={`decision decision-${tone}`}>
+      <span className="decision-label">{label}</span>
+      <strong className="decision-answer">{answer}</strong>
+      <span className="decision-detail">{detail}</span>
+    </div>
   )
 }
 
@@ -187,6 +363,8 @@ function thresholdSub(f: Forecast): string {
 }
 
 function calendarLabel(f: Forecast): string {
-  if (!f.cross_date_ci80) return 'No threshold crossing predicted in the next two weeks.'
+  if (!f.cross_date_ci80) {
+    return 'No threshold crossing predicted in the next two weeks.'
+  }
   return `Threshold crossing predicted between ${f.cross_date_ci80[0]} and ${f.cross_date_ci80[1]}, median ${f.median_cross_date}.`
 }

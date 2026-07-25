@@ -65,7 +65,7 @@ export function ScoutPanel({ engine, observations, onConfirm, onRemove }: Props)
   return (
     <section className="panel scout-panel">
       <div className="panel-header">
-        <h3>Scout sheet</h3>
+        <h3>Add a scout visit</h3>
         <a className="form-link" href={FORM_URL} target="_blank" rel="noreferrer">
           Print blank sheet ↗
         </a>
@@ -126,19 +126,19 @@ export function ScoutPanel({ engine, observations, onConfirm, onRemove }: Props)
                 Transcribing sheet…
               </>
             ) : (
-              <>📷 Photograph filled-in sheet</>
+              <>📷 Photograph your scout sheet</>
             )}
           </button>
           {stage !== 'reading' && (
             <button className="manual-link" onClick={startManual}>
-              or type the counts in by hand
+              or enter counts by hand
             </button>
           )}
           {stage === 'idle' && observations.length === 0 && (
             <p className="scout-hint">
-              Print the sheet, count aphids in the field with a pen, then
-              photograph it. Gemini transcribes the handwriting — you confirm
-              every number before it reaches the forecast.
+              1. Print the blank sheet · 2. Count aphids in the field · 3.
+              Photograph the filled sheet. Confirm the numbers, then you get
+              spray / re-scout / dollars — not a plant photo analysis.
             </p>
           )}
         </>
@@ -234,7 +234,7 @@ export function ScoutPanel({ engine, observations, onConfirm, onRemove }: Props)
                 setStage('idle')
               }}
             >
-              {complete ? 'Confirm visit' : 'Fill the blanks to confirm'}
+              {complete ? 'Confirm & get plan' : 'Fill the blanks to confirm'}
             </button>
           </div>
         </div>
