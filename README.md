@@ -1,9 +1,33 @@
-# farmer_app — threshold crossing forecast engine
+# SpraySense
 
-Predicts the calendar date a soybean aphid population will cross its economic
-threshold, so a grower can book the sprayer instead of spraying prophylactically.
+Tells a grower the date to spray, instead of spraying on a calendar schedule.
 
-Counts come from a human scout. No computer vision.
+Two halves in one repo:
+
+- **Forecast engine** (`src/*.ts`, `test/`) — predicts the calendar date a soybean
+  aphid population crosses its economic threshold. Deep docs: [BACKEND.md](BACKEND.md).
+- **Field monitor UI** (`src/App.tsx`, `src/components/`) — the demo frontend: farm
+  overview, per-field live feed, live weather. Deep docs: [frontend.md](frontend.md).
+
+## Running it
+
+Needs **Node ≥ 22.18**.
+
+```bash
+npm install        # frontend deps (React, Vite); the engine itself has none
+npm run dev        # UI on http://localhost:5173
+```
+
+```bash
+npm test           # 29 engine tests
+npm run demo       # the engine's CLI demo (hits Open-Meteo)
+npm run serve      # POST /forecast on :8787
+```
+
+Node runs the engine's TypeScript directly — `npm run build` typechecks and bundles
+the frontend only.
+
+## The engine
 
 ```
 $ npm run demo
@@ -15,8 +39,6 @@ DON'T SPRAY. 65% chance of crossing within 7 days — book the sprayer, don't sp
 Median crossing: Jul 31 (80% CI Jul 27 - Aug 4)
 Book the sprayer for Jul 27.
 ```
-
-## The point
 
 Most tools hard-code the threshold at 250 aphids/plant. That number is a 2003
 consensus rule of thumb, and at today's prices it can be off by ±40%. This engine
@@ -31,26 +53,12 @@ forecast temperature error turns that into a date distribution rather than a poi
 estimate. The interval width is the product — it tells the grower how much the next
 scouting visit is worth.
 
+Counts come from a human scout. No computer vision.
+
 Where the research contradicted the spec it was built from, the corrections and
 their sources are in [NOTES.md](NOTES.md).
 
-## Running it
-
-Needs **Node ≥ 22.18**. No `npm install` — there are no dependencies. Node runs the
-TypeScript directly and `node --test` is the test runner.
-
-```bash
-npm test                      # 29 tests
-npm run demo                  # the screen above (hits Open-Meteo)
-node src/cli.ts demo.json --json
-npm run serve                 # POST /forecast on :8787
-```
-
-```bash
-curl -s localhost:8787/forecast -H 'content-type: application/json' -d @demo.json
-```
-
-## The interface
+### Interface
 
 ```ts
 forecastCrossing(observations: Observation[], opts: ForecastOptions): Promise<Forecast>
@@ -72,6 +80,17 @@ Guard rails, all enforced and all tested:
 | Population flat or declining | Never recommends spraying |
 | Predators ≥1 per 50 aphids | `PREDATOR_SUPPRESSED` |
 
+## The UI
+
+1. **Farm overview** — 5 fields as flat rectangles on black. Hover for health / pest risk.
+2. Click any field — the block scales up to fill the screen.
+3. **Field monitor** — field feed video on the left, live Fresno CA weather on the
+   right (Open-Meteo, no API key, 60 s refresh), **Calculate next spray date** at the bottom.
+
+The calculate button is still stubbed — wiring it to the engine above is the
+remaining integration step (`TODO(ml-team)` in
+[src/components/FieldDetail.tsx](src/components/FieldDetail.tsx)).
+
 ## Layout
 
 ```
@@ -82,30 +101,12 @@ src/forecast.ts     Monte Carlo, guard rails, assembles the Forecast
 src/weather.ts      Open-Meteo client with disk cache
 src/random.ts       seeded RNG and samplers
 src/cli.ts          src/server.ts
+
+src/App.tsx         screen state
+src/components/     FarmOverview, FieldCard, FieldDetail, LiveFeed, WeatherPanel
+src/data/fields.ts  the 5 demo fields
+src/styles.css      all styling
 ```
 
 Sources are cited inline at each constant. [BRIEF.md](BRIEF.md) is the original
 build brief.
-# SpraySense
-
-Hackathon demo — tells farmers exactly when to spray instead of spraying on a fixed schedule.
-
-## Run it
-
-```bash
-npm install
-npm run dev
-```
-
-Open http://localhost:5173.
-
-## Demo flow
-
-1. **Farm overview** — 5 fields as minimal flat rectangles on black. Hover a field for a quick health / pest-risk readout.
-2. Click **any field** — the block scales up to fill the screen (Framer Motion shared-layout transition).
-3. **Field monitor** — the field feed video plays on the left, live Fresno CA weather on the right (Open-Meteo, free / no API key, refreshes every 60 s), and the **Calculate next spray date** button at the bottom.
-
-## Notes for the team
-
-- **Video**: `public/field-feed.mp4` (1280×720 h264, 8 s loop) is the feed footage. Every field shares this one clip and just relabels it `CAM-01 · <FIELD NAME>` — swap that file to change the footage everywhere. If it's ever missing or won't decode, an animated canvas simulation renders instead so the demo never breaks.
-- **ML hook**: the calculate button currently simulates a request. Wire the real prediction API in `handleCalculate()` in [src/components/FieldDetail.tsx](src/components/FieldDetail.tsx) — the `TODO(ml-team)` comment marks the spot.

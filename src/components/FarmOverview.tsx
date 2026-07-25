@@ -17,9 +17,7 @@ export function FarmOverview({ fields, activeFieldId, onSelect }: Props) {
     >
       <header className="overview-header">
         <div className="brand">
-          <span className="brand-mark" aria-hidden>
-            ◆
-          </span>
+          <img className="brand-mark" src="/logo.png" alt="" aria-hidden />
           <div>
             <h1>SpraySense</h1>
             <p className="brand-sub">Sunrise Valley Farm · Fresno County, CA</p>

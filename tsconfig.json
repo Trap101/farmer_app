@@ -16,5 +16,7 @@
     "noUnusedParameters": false,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src"]
+  // Frontend sources only. The forecast engine (src/*.ts, test/) targets Node
+  // APIs and is run by Node directly, so it is not part of the Vite build.
+  "include": ["src/main.tsx", "src/App.tsx", "src/components", "src/data"]
 }
