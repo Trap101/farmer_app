@@ -88,26 +88,50 @@ src/cli.ts          src/server.ts
 
 Sources are cited inline at each constant. [BRIEF.md](BRIEF.md) is the original
 build brief.
-# SpraySense
+---
 
-Hackathon demo — tells farmers exactly when to spray instead of spraying on a fixed schedule.
+# The frontend
 
-## Run it
+The grower-facing UI over the engine above. Vite + React 18 + Framer Motion.
+Architecture in [frontend.md](frontend.md).
 
 ```bash
-npm install
-npm run dev
-```
+npm install                                            # the UI has deps; the engine has none
+npm run serve                                          # engine on :8787 (needs GEMINI_API_KEY for OCR)
+npm run dev                                            # UI on :5173, proxies /api -> :8787
 
-Open http://localhost:5173.
+ENGINE_ORIGIN=https://spraysense.onrender.com npm run dev   # or borrow the deployed engine
+```
 
 ## Demo flow
 
-1. **Farm overview** — 5 fields as minimal flat rectangles on black. Hover a field for a quick health / pest-risk readout.
-2. Click **any field** — the block scales up to fill the screen (Framer Motion shared-layout transition).
-3. **Field monitor** — the field feed video plays on the left, live Fresno CA weather on the right (Open-Meteo, free / no API key, refreshes every 60 s), and the **Calculate next spray date** button at the bottom.
+1. **Farm overview** — five fields as flat rectangles on black. Hover for a
+   health / pest-risk readout.
+2. **Click South Flat** — the block scales up to fullscreen (Framer Motion
+   shared-layout transition). This is the soybean field, the only one the engine
+   can model; the other four open too but say plainly that their crop isn't
+   modelled.
+3. **Photograph a filled-in scout sheet** — "Print blank sheet" serves the
+   engine's `/form`. Gemini transcribes the handwriting via `POST /scout/ocr`.
+4. **Check the transcription** — every value is editable, blanks are flagged red,
+   and Confirm stays disabled until they're filled. Nothing is guessed for you.
+5. **Calculate next spray date** — `POST /forecast` with every confirmed visit.
+   The spray plan shows a 14-day calendar (booking date, median crossing, 80%
+   interval), the price-derived threshold, and the sources behind each number.
+
+Two visits are what produce a real growth rate; one gives a prior-driven forecast
+with a deliberately wide interval.
 
 ## Notes for the team
 
-- **Video**: `public/field-feed.mp4` (1280×720 h264, 8 s loop) is the feed footage. Every field shares this one clip and just relabels it `CAM-01 · <FIELD NAME>` — swap that file to change the footage everywhere. If it's ever missing or won't decode, an animated canvas simulation renders instead so the demo never breaks.
-- **ML hook**: the calculate button currently simulates a request. Wire the real prediction API in `handleCalculate()` in [src/components/FieldDetail.tsx](src/components/FieldDetail.tsx) — the `TODO(ml-team)` comment marks the spot.
+- **Video**: `public/field-feed.mp4` (1280×720 h264, 8 s loop). Every field
+  shares this one clip and relabels it `CAM-01 · <FIELD NAME>` — swap the file to
+  change the footage everywhere. If it's missing or won't decode, an animated
+  canvas simulation renders instead so the demo never breaks.
+- **No dose.** The engine computes *when* to spray, not *how much* — it carries
+  no product or application rate anywhere. The plan panel shows timing plus the
+  economics it does compute, and claims no dose.
+- **Deploying.** On Render one host serves both the built UI and the API, so the
+  frontend uses relative paths and needs no configuration. Splitting them (e.g.
+  the UI on Vercel) requires `VITE_ENGINE_ORIGIN` set to the engine's origin at
+  build time.

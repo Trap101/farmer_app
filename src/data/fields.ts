@@ -12,6 +12,25 @@ export interface Field {
   // seed that varies the NDVI blotch pattern per field
   seed: number
   demoEnabled: boolean
+  /**
+   * Set only on fields the forecast engine can actually model. The engine's
+   * thermal constants in src/phenology.ts are soybean-aphid-specific, so a
+   * field without this shows the feed and weather but no spray forecast —
+   * better than rendering an aphid threshold under an almond block.
+   */
+  engine?: EngineConfig
+}
+
+export interface EngineConfig {
+  /** field_id sent to the engine; must match across scouting visits. */
+  fieldId: string
+  /** Drives degree-day accumulation — the forecast is only as local as this. */
+  lat: number
+  lon: number
+  /** Shown in the UI so the coordinates above are never a silent claim. */
+  location: string
+  /** Soybean reproductive stage, e.g. "R3". Guard rails key off this. */
+  growthStage: string
 }
 
 export const FIELDS: Field[] = [
@@ -57,7 +76,7 @@ export const FIELDS: Field[] = [
   {
     id: 'south-flat',
     name: 'South Flat',
-    crop: 'Cotton',
+    crop: 'Soybean',
     acres: 152,
     health: 77,
     pestRisk: 'Moderate',
@@ -66,6 +85,18 @@ export const FIELDS: Field[] = [
     gridArea: '3 / 1 / 4 / 3',
     seed: 41,
     demoEnabled: true,
+    // The one field wired to the forecast engine. Coordinates are Minnesota,
+    // not Fresno: at Fresno's July temperatures the suitability curve
+    // suppresses aphid growth hard enough that the same counts return
+    // BELOW_THRESHOLD with a null confidence interval. Move these to
+    // 36.7378 / -119.7871 to see that for yourself.
+    engine: {
+      fieldId: 'South Flat',
+      lat: 44.98,
+      lon: -93.26,
+      location: 'Renville County, MN',
+      growthStage: 'R3',
+    },
   },
   {
     id: 'west-hollow',
