@@ -7,6 +7,7 @@ interface ImportMetaEnv {
    * Vercel, where no proxy exists.
    */
   readonly VITE_ENGINE_ORIGIN?: string
+  readonly VITE_API_URL?: string
 }
 
 interface ImportMeta {

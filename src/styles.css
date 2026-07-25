@@ -71,15 +71,10 @@ button {
 }
 
 .brand-mark {
-  display: grid;
-  place-items: center;
   width: 44px;
   height: 44px;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #57c84d, #2e8b2e);
-  color: #0d1410;
-  font-size: 20px;
-  box-shadow: 0 6px 18px rgba(87, 200, 77, 0.35);
+  object-fit: contain;
+  display: block;
 }
 
 .brand h1 {
@@ -654,6 +649,10 @@ button {
 .calc-result {
   color: var(--accent);
   font-weight: 600;
+}
+
+.calc-result-error {
+  color: #e07070;
 }
 
 .calc-btn {

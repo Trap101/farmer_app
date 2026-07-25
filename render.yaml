@@ -1,0 +1,15 @@
+# One service: Vite UI + forecast/OCR API.
+# Dashboard → New → Blueprint → this repo, then set GEMINI_API_KEY.
+services:
+  - type: web
+    name: spraysense
+    runtime: node
+    plan: free
+    buildCommand: npm install --include=dev && npm run build
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: "22.18.0"
+      - key: GEMINI_API_KEY
+        sync: false
