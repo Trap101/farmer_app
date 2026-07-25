@@ -1,0 +1,28 @@
+{
+  "lat": 44.98,
+  "lon": -93.26,
+  "crop_price": 10.5,
+  "spray_cost_per_acre": 22.0,
+  "yield_potential_bu_ac": 50,
+  "seed": 20260724,
+  "observations": [
+    {
+      "field_id": "North 40",
+      "date": "2026-07-20",
+      "count_per_plant": 95,
+      "n_plants_sampled": 30,
+      "pct_plants_infested": 85,
+      "predator_count": 0.4,
+      "growth_stage": "R3"
+    },
+    {
+      "field_id": "North 40",
+      "date": "2026-07-24",
+      "count_per_plant": 180,
+      "n_plants_sampled": 30,
+      "pct_plants_infested": 92,
+      "predator_count": 0.6,
+      "growth_stage": "R3"
+    }
+  ]
+}

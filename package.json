@@ -1,4 +1,16 @@
 {
+  "name": "farmer-app-forecast",
+  "version": "0.1.0",
+  "description": "Predicts the calendar date a pest population crosses its economic threshold",
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "test": "node --test \"test/**/*.test.ts\"",
+    "demo": "node src/cli.ts demo.json",
+    "serve": "node src/server.ts"
   "name": "spraysense",
   "private": true,
   "version": "0.1.0",
