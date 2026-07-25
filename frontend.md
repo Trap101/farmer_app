@@ -68,18 +68,80 @@ Classic Framer Motion shared-layout ("expanding card") pattern:
 - `sprayCondition()` is a simple heuristic chip (wind > 10 mph or rain → Poor,
   etc.) — purely cosmetic, independent of the ML model.
 
-**Calculate next spray date** ([src/components/FieldDetail.tsx](src/components/FieldDetail.tsx))
-- `handleCalculate()` currently fakes a 1.8 s request then shows a done state.
-- **ML integration point**: replace the simulated wait with the real API call —
-  marked `TODO(ml-team)`. The button already handles idle / loading / done UI
-  states, so only the fetch needs wiring.
+## The scout flow — wired to the real engine
+
+Only fields carrying an `engine` block in [src/data/fields.ts](src/data/fields.ts)
+reach the forecast engine; today that is **South Flat** alone. The engine's
+thermal constants are soybean-aphid-specific, so the other four keep the feed +
+weather panel and say plainly that their crop is not modelled. Adding a field
+means adding the block, not editing components.
+
+The path a grower walks, all four steps verified end to end against the
+deployed engine:
+
+1. **Pick a field** on the overview.
+2. **Print the blank sheet** (`FORM_URL` → the engine's `GET /form`), count
+   aphids in the field with a pen, photograph it.
+3. **`POST /scout/ocr`** transcribes the handwriting with Gemini and returns a
+   ready `Observation` — or `null` plus `warnings` when the sheet is missing
+   something the engine cannot run without.
+4. **Correct and confirm.** [ScoutPanel.tsx](src/components/ScoutPanel.tsx)
+   shows every transcribed value in an editable grid. Nothing is guessed on the
+   grower's behalf: a value the sheet did not state stays `NaN`, renders as an
+   empty red-bordered box, and the Confirm button stays disabled until it is
+   filled. `n_plants_sampled` drives the forecast's confidence interval, so a
+   plausible default there is the one wrong number a demo would never notice.
+5. **`POST /forecast`** with every confirmed visit.
+   [SprayPlan.tsx](src/components/SprayPlan.tsx) renders the result.
+
+There is also a hand-entry escape hatch ("or type the counts in by hand") that
+opens the same review grid with the same confirm gate — insurance for a dead
+Gemini key or no wifi on stage.
+
+**Reading the forecast.** Switch on `reason_code`, never on the numbers.
+`canBookSprayer()` in [src/api.ts](src/api.ts) is the only thing that decides
+whether a booking date is offered: `BELOW_THRESHOLD` can carry a non-null
+`recommended_action_date`, and offering to book on it would be wrong. Only
+`ABOVE_THRESHOLD` means spray today.
+
+**The calendar** is a 14-day strip from today: filled cell = booking date,
+ringed cell = median crossing, tinted band = the 80% interval. The band's width
+is the product — it shows how much the next scouting visit is worth.
+
+**No dose.** The engine computes *when*, not *how much*. Nothing in it carries a
+product or application rate, so the plan panel shows timing and the economics it
+does compute ($/acre, break-even %) and claims no dose.
+
+## Talking to the engine
+
+`BASE` in [src/api.ts](src/api.ts) resolves per deployment:
+
+| Where | `BASE` | Why |
+|---|---|---|
+| local dev | `/api` | Vite proxies to `:8787` (see `vite.config.ts`) |
+| Render | `''` | one host serves the built frontend *and* the API |
+| Vercel / split | `VITE_ENGINE_ORIGIN` | cross-origin; relies on the engine's open CORS |
+
+Point local dev at the deployed engine — the one with `GEMINI_API_KEY` — with:
+
+```bash
+ENGINE_ORIGIN=https://spraysense.onrender.com npm run dev
+```
+
+Types come from [src/types.ts](src/types.ts), the engine's own contract. Keep
+every import of it `import type`; a value import breaks Node's type stripping
+*and* drags server code into the browser bundle (BACKEND.md, landmine 3).
 
 ## Layout notes
 
-- Detail screen is a 2-column grid (feed 1.5fr / weather 1fr); below 1000px it
-  becomes a scrollable stacked column (`@media` block at the bottom of
+- Detail screen is a 2-column grid (feed 1.5fr / scout or weather 1fr); below
+  1000px it becomes a scrollable stacked column (`@media` block at the bottom of
   [src/styles.css](src/styles.css)). Don't size panels with `1fr` rows there —
   fixed-height grids compress `min-height: 0` panels and cause overlap.
+- Once the spray plan mounts, `.detail-inner` gains `detail-inner-scroll`, which
+  switches the viewport-height column to `overflow-y: auto` and gives the feed
+  row a real height. Leaving the grid at `flex: 1` with the plan below it
+  crushes both panels — the same trap as the `@media` block above.
 - Fonts: Inter (UI) + JetBrains Mono (numbers/telemetry), loaded in
   `index.html`. Theme tokens live in `:root` in `styles.css`.
 

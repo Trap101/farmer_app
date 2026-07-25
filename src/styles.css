@@ -702,3 +702,416 @@ button {
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+/* -------- scout sheet -------- */
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.scout-panel,
+.plan-panel {
+  min-height: 0;
+}
+
+.form-link {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  text-decoration: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.form-link:hover { color: var(--accent); }
+
+.upload-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  width: 100%;
+  padding: 14px;
+  border: 1px dashed rgba(87, 200, 77, 0.4);
+  border-radius: 12px;
+  background: rgba(87, 200, 77, 0.06);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.upload-btn:hover:not(:disabled) {
+  background: rgba(87, 200, 77, 0.12);
+  border-color: var(--accent);
+}
+
+.upload-btn:disabled { cursor: progress; opacity: 0.75; }
+
+.scout-hint,
+.review-note {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-dim);
+}
+
+.scout-error,
+.calc-error {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--red);
+}
+
+.scout-error code,
+.calc-error code,
+.footer-note code {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.visit-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  list-style: none;
+}
+
+.visit-row {
+  display: grid;
+  grid-template-columns: auto auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 9px;
+  background: var(--bg-raise);
+  font-size: 12px;
+}
+
+.visit-date { font-family: var(--font-mono); color: var(--text); }
+.visit-count { font-family: var(--font-mono); color: var(--accent); font-weight: 600; }
+.visit-meta { color: var(--text-dim); font-size: 11px; }
+
+.visit-remove {
+  border: 0;
+  background: none;
+  color: var(--text-dim);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 2px;
+}
+
+.visit-remove:hover { color: var(--red); }
+
+/* -------- transcription review -------- */
+
+.review {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.sheet-thumb {
+  width: 100%;
+  max-height: 150px;
+  object-fit: cover;
+  /* The header block and insect table are at the top of the sheet — centring
+     a full-page photo crops to the weeds table, which tells the scout nothing. */
+  object-position: top;
+  border-radius: 10px;
+  border: 1px solid var(--panel-border);
+}
+
+.warn-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  list-style: none;
+  padding: 10px 12px;
+  border-radius: 9px;
+  background: rgba(245, 194, 17, 0.09);
+  border: 1px solid rgba(245, 194, 17, 0.22);
+}
+
+.warn-list li {
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--amber);
+}
+
+.review-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 9px;
+}
+
+.review-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.review-label {
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-dim);
+}
+
+.review-input {
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--panel-border);
+  background: var(--bg-raise);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  width: 100%;
+}
+
+.review-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+/* A blank required value is the one thing a demo would never notice. */
+.review-field-missing .review-input {
+  border-color: rgba(228, 87, 46, 0.55);
+  background: rgba(228, 87, 46, 0.07);
+}
+
+.review-hint {
+  font-size: 10px;
+  color: var(--text-dim);
+  opacity: 0.8;
+}
+
+.review-actions {
+  display: flex;
+  gap: 9px;
+  justify-content: flex-end;
+}
+
+.ghost-btn,
+.confirm-btn {
+  padding: 9px 15px;
+  border-radius: 9px;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--panel-border);
+}
+
+.ghost-btn { background: none; color: var(--text-dim); }
+.ghost-btn:hover { color: var(--text); border-color: rgba(255, 255, 255, 0.2); }
+
+.confirm-btn { background: var(--accent); color: #07130a; border-color: transparent; }
+.confirm-btn:disabled { background: var(--bg-raise); color: var(--text-dim); cursor: not-allowed; }
+
+/* -------- spray plan -------- */
+
+.detail-plan { margin-top: 14px; }
+
+.reason-chip {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 4px 9px;
+  border-radius: 999px;
+}
+
+.reason-good { background: rgba(87, 200, 77, 0.14); color: var(--accent); }
+.reason-caution { background: rgba(245, 194, 17, 0.14); color: var(--amber); }
+.reason-bad { background: rgba(228, 87, 46, 0.16); color: var(--red); }
+.reason-neutral { background: var(--bg-raise); color: var(--text-dim); }
+
+.plan-message {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text);
+}
+
+.plan-headline {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--bg-raise);
+}
+
+.plan-headline-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+}
+
+.plan-headline-date {
+  font-family: var(--font-mono);
+  font-size: 26px;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.plan-headline-hold { font-size: 17px; color: var(--text-dim); }
+
+/* 14-day strip */
+.calendar {
+  display: grid;
+  grid-template-columns: repeat(14, 1fr);
+  gap: 3px;
+}
+
+.cal-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 7px 0;
+  border-radius: 7px;
+  background: var(--bg-raise);
+  border: 1px solid transparent;
+}
+
+.cal-dow {
+  font-size: 9px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.cal-num {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text);
+}
+
+.cal-band { background: rgba(245, 194, 17, 0.16); }
+.cal-median { border-color: var(--amber); }
+.cal-book { background: var(--accent); }
+.cal-book .cal-num, .cal-book .cal-dow { color: #07130a; font-weight: 700; }
+.cal-today { outline: 1px solid rgba(255, 255, 255, 0.22); outline-offset: -1px; }
+
+.cal-legend {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  font-size: 10.5px;
+  color: var(--text-dim);
+}
+
+.cal-legend span { display: inline-flex; align-items: center; gap: 5px; }
+
+.swatch {
+  width: 9px;
+  height: 9px;
+  border-radius: 3px;
+  display: inline-block;
+}
+
+.swatch-book { background: var(--accent); }
+.swatch-median { border: 1px solid var(--amber); }
+.swatch-band { background: rgba(245, 194, 17, 0.35); }
+
+.plan-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+}
+
+.plan-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--bg-raise);
+}
+
+.plan-metric-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-dim);
+}
+
+.plan-metric-value {
+  font-family: var(--font-mono);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.plan-metric-sub { font-size: 10.5px; color: var(--text-dim); }
+
+.plan-interval-note {
+  font-size: 11.5px;
+  font-style: italic;
+  color: var(--text-dim);
+}
+
+.citations summary {
+  font-size: 11.5px;
+  color: var(--text-dim);
+  cursor: pointer;
+}
+
+.citations ul {
+  margin-top: 8px;
+  padding-left: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.citations li {
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--text-dim);
+}
+
+/* The detail screen is a viewport-height flex column, so the plan panel does
+   not fit alongside a flex:1 feed row. Once it mounts, let the whole inner
+   column scroll and give the feed/scout row a real height — leaving it flex:1
+   crushes both panels instead (same trap as the <1000px block above). */
+.detail-inner-scroll {
+  overflow-y: auto;
+  padding-right: clamp(18px, 3vw, 48px);
+}
+
+.detail-inner-scroll .detail-grid {
+  flex: none;
+  min-height: min(460px, 58vh);
+}
+
+.detail-inner-scroll .detail-footer {
+  flex: none;
+}
+
+.manual-link {
+  align-self: center;
+  padding: 4px;
+  border: 0;
+  background: none;
+  font-size: 11.5px;
+  color: var(--text-dim);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.manual-link:hover { color: var(--accent); }
