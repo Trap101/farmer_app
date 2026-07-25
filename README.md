@@ -1,8 +1,33 @@
-# farmer_app — threshold crossing forecast engine
+# SpraySense
 
-Predicts the calendar date a soybean aphid population will cross its economic
-threshold, so a grower can book the sprayer instead of spraying prophylactically.
+Tells a grower the date to spray, instead of spraying on a calendar schedule.
 
+Two halves in one repo:
+
+- **Forecast engine** (`src/*.ts`, `test/`) — predicts the calendar date a soybean
+  aphid population crosses its economic threshold. Deep docs: [BACKEND.md](BACKEND.md).
+- **Field monitor UI** (`src/App.tsx`, `src/components/`) — the demo frontend: farm
+  overview, per-field live feed, live weather. Deep docs: [frontend.md](frontend.md).
+
+## Running it
+
+Needs **Node ≥ 22.18**.
+
+```bash
+npm install        # frontend deps (React, Vite); the engine itself has none
+npm run dev        # UI on http://localhost:5173
+```
+
+```bash
+npm test           # 29 engine tests
+npm run demo       # the engine's CLI demo (hits Open-Meteo)
+npm run serve      # POST /forecast on :8787
+```
+
+Node runs the engine's TypeScript directly — `npm run build` typechecks and bundles
+the frontend only.
+
+## The engine
 Counts come from a human scout, on paper. Photograph the filled-in sheet and
 `POST /scout/ocr` transcribes it (Gemini) into the counts the engine takes.
 
@@ -17,8 +42,6 @@ Median crossing: Jul 31 (80% CI Jul 27 - Aug 4)
 Book the sprayer for Jul 27.
 ```
 
-## The point
-
 Most tools hard-code the threshold at 250 aphids/plant. That number is a 2003
 consensus rule of thumb, and at today's prices it can be off by ±40%. This engine
 recomputes it from the grower's actual crop price and spray cost using the equation
@@ -32,9 +55,12 @@ forecast temperature error turns that into a date distribution rather than a poi
 estimate. The interval width is the product — it tells the grower how much the next
 scouting visit is worth.
 
+Counts come from a human scout. No computer vision.
+
 Where the research contradicted the spec it was built from, the corrections and
 their sources are in [NOTES.md](NOTES.md).
 
+### Interface
 ## Running it
 
 Needs **Node ≥ 22.18**. No `npm install` — there are no dependencies. Node runs the
@@ -74,6 +100,17 @@ Guard rails, all enforced and all tested:
 | Population flat or declining | Never recommends spraying |
 | Predators ≥1 per 50 aphids | `PREDATOR_SUPPRESSED` |
 
+## The UI
+
+1. **Farm overview** — 5 fields as flat rectangles on black. Hover for health / pest risk.
+2. Click any field — the block scales up to fill the screen.
+3. **Field monitor** — field feed video on the left, live Fresno CA weather on the
+   right (Open-Meteo, no API key, 60 s refresh), **Calculate next spray date** at the bottom.
+
+The calculate button is still stubbed — wiring it to the engine above is the
+remaining integration step (`TODO(ml-team)` in
+[src/components/FieldDetail.tsx](src/components/FieldDetail.tsx)).
+
 ## Layout
 
 ```
@@ -84,6 +121,11 @@ src/forecast.ts     Monte Carlo, guard rails, assembles the Forecast
 src/weather.ts      Open-Meteo client with disk cache
 src/random.ts       seeded RNG and samplers
 src/cli.ts          src/server.ts
+
+src/App.tsx         screen state
+src/components/     FarmOverview, FieldCard, FieldDetail, LiveFeed, WeatherPanel
+src/data/fields.ts  the 5 demo fields
+src/styles.css      all styling
 ```
 
 Sources are cited inline at each constant. [BRIEF.md](BRIEF.md) is the original
@@ -103,6 +145,24 @@ npm run dev          # http://localhost:5173
    right (Open-Meteo, no API key, 60 s refresh), **Calculate next spray date** at the bottom.
 
 Frontend internals are documented in [frontend.md](frontend.md).
+---
+
+# The frontend
+
+The grower-facing UI over the engine above. Vite + React 18 + Framer Motion.
+Architecture in [frontend.md](frontend.md).
+**Live demo:** https://spraysense.onrender.com
+
+## Run it
+
+```bash
+npm install                                            # the UI has deps; the engine has none
+npm run serve                                          # engine on :8787 (needs GEMINI_API_KEY for OCR)
+npm run dev                                            # UI on :5173, proxies /api -> :8787
+
+ENGINE_ORIGIN=https://spraysense.onrender.com npm run dev   # or borrow the deployed engine
+```
+Open http://localhost:5173 (or the [live demo](https://spraysense.onrender.com)).
 
 ### Assets
 
@@ -111,9 +171,36 @@ Frontend internals are documented in [frontend.md](frontend.md).
 | `public/logo.png` | Brand mark. Also `favicon.png`, `apple-touch-icon.png`. |
 | `public/hero.jpg` | Landing hero photo. **Optional** — a CSS backdrop renders if absent. |
 | `public/field-feed.mp4` | Feed footage, shared by every field. Canvas sim renders if absent. |
+1. **Farm overview** — five fields as flat rectangles on black. Hover for a
+   health / pest-risk readout.
+2. **Click South Flat** — the block scales up to fullscreen (Framer Motion
+   shared-layout transition). This is the soybean field, the only one the engine
+   can model; the other four open too but say plainly that their crop isn't
+   modelled.
+3. **Photograph a filled-in scout sheet** — "Print blank sheet" serves the
+   engine's `/form`. Gemini transcribes the handwriting via `POST /scout/ocr`.
+4. **Check the transcription** — every value is editable, blanks are flagged red,
+   and Confirm stays disabled until they're filled. Nothing is guessed for you.
+5. **Calculate next spray date** — `POST /forecast` with every confirmed visit.
+   The spray plan shows a 14-day calendar (booking date, median crossing, 80%
+   interval), the price-derived threshold, and the sources behind each number.
+
+Two visits are what produce a real growth rate; one gives a prior-driven forecast
+with a deliberately wide interval.
 
 ### Remaining integration
 
 The dashboard's **Calculate next spray date** button still simulates its request.
 Wiring it to `POST /forecast` above is the last step — `TODO(ml-team)` in
 [src/components/FieldDetail.tsx](src/components/FieldDetail.tsx).
+- **Video**: `public/field-feed.mp4` (1280×720 h264, 8 s loop). Every field
+  shares this one clip and relabels it `CAM-01 · <FIELD NAME>` — swap the file to
+  change the footage everywhere. If it's missing or won't decode, an animated
+  canvas simulation renders instead so the demo never breaks.
+- **No dose.** The engine computes *when* to spray, not *how much* — it carries
+  no product or application rate anywhere. The plan panel shows timing plus the
+  economics it does compute, and claims no dose.
+- **Deploying.** On Render one host serves both the built UI and the API, so the
+  frontend uses relative paths and needs no configuration. Splitting them (e.g.
+  the UI on Vercel) requires `VITE_ENGINE_ORIGIN` set to the engine's origin at
+  build time.
