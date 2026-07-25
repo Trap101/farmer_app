@@ -29,7 +29,8 @@ src/
 - Fill color is flat, derived from the health score in `healthColor()`
   ([src/components/FieldCard.tsx](src/components/FieldCard.tsx)) — no gradients.
 - Hover: overlay fades in with health %, pest risk, and the open CTA.
-- Only fields with `demoEnabled: true` navigate (currently just North Ridge).
+- Only fields with `demoEnabled: true` navigate — all five are enabled, and each
+  opens the same shared feed clip labelled with its own name.
 
 ## The transition
 
@@ -48,10 +49,15 @@ Classic Framer Motion shared-layout ("expanding card") pattern:
 ## Screen 2 — field monitor
 
 **Live feed** ([src/components/LiveFeed.tsx](src/components/LiveFeed.tsx))
-- Renders `<video src="/field-feed.mp4" autoPlay loop muted>` — put the encoded
-  video at `public/field-feed.mp4` and it just works.
-- If the file is missing, `onError` swaps in a canvas animation (drifting NDVI
-  blobs + scanlines) so the demo never shows a broken player.
+- Renders `<video src={FEED_SRC} autoPlay loop muted playsInline>` pointing at
+  `public/field-feed.mp4`. One clip serves every field — `FEED_SRC` at the top
+  of the file is the single place to change it.
+- Three states: `connecting` shows an "Acquiring CAM-01 signal…" overlay while
+  the clip buffers (so the frame is never a black rectangle), `playing` on
+  `onCanPlay`, `failed` on `onError` — which swaps in a canvas animation
+  (drifting NDVI blobs + scanlines) so the demo never shows a dead player.
+- `muted` + `playsInline` are load-bearing, not decoration: browsers block
+  autoplay for unmuted video, and iOS Safari would otherwise go fullscreen.
 - "Live" dressing: blinking LIVE badge, CAM-01 label, real ticking clock (PT).
 
 **Weather** ([src/components/WeatherPanel.tsx](src/components/WeatherPanel.tsx))

@@ -39,7 +39,7 @@ export const FIELDS: Field[] = [
     moisture: 41,
     gridArea: '1 / 3 / 2 / 5',
     seed: 13,
-    demoEnabled: false,
+    demoEnabled: true,
   },
   {
     id: 'creek-bend',
@@ -52,7 +52,7 @@ export const FIELDS: Field[] = [
     moisture: 38,
     gridArea: '2 / 3 / 3 / 4',
     seed: 29,
-    demoEnabled: false,
+    demoEnabled: true,
   },
   {
     id: 'south-flat',
@@ -65,7 +65,7 @@ export const FIELDS: Field[] = [
     moisture: 29,
     gridArea: '3 / 1 / 4 / 3',
     seed: 41,
-    demoEnabled: false,
+    demoEnabled: true,
   },
   {
     id: 'west-hollow',
@@ -78,6 +78,6 @@ export const FIELDS: Field[] = [
     moisture: 45,
     gridArea: '2 / 4 / 4 / 5',
     seed: 53,
-    demoEnabled: false,
+    demoEnabled: true,
   },
 ]
