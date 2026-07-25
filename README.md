@@ -130,6 +130,21 @@ src/styles.css      all styling
 
 Sources are cited inline at each constant. [BRIEF.md](BRIEF.md) is the original
 build brief.
+
+## The app
+
+```bash
+npm install
+npm run dev          # http://localhost:5173
+```
+
+1. **Landing page** — what the product does and who it's for. "Open the dashboard" enters the demo.
+2. **Farm overview** — 5 fields as flat rectangles; hover for health / pest risk.
+3. Click any field — the block scales up to fill the screen.
+4. **Field monitor** — field feed video on the left, live Fresno CA weather on the
+   right (Open-Meteo, no API key, 60 s refresh), **Calculate next spray date** at the bottom.
+
+Frontend internals are documented in [frontend.md](frontend.md).
 ---
 
 # The frontend
@@ -149,8 +164,13 @@ ENGINE_ORIGIN=https://spraysense.onrender.com npm run dev   # or borrow the depl
 ```
 Open http://localhost:5173 (or the [live demo](https://spraysense.onrender.com)).
 
-## Demo flow
+### Assets
 
+| File | Notes |
+|---|---|
+| `public/logo.png` | Brand mark. Also `favicon.png`, `apple-touch-icon.png`. |
+| `public/hero.jpg` | Landing hero photo. **Optional** — a CSS backdrop renders if absent. |
+| `public/field-feed.mp4` | Feed footage, shared by every field. Canvas sim renders if absent. |
 1. **Farm overview** — five fields as flat rectangles on black. Hover for a
    health / pest-risk readout.
 2. **Click South Flat** — the block scales up to fullscreen (Framer Motion
@@ -168,8 +188,11 @@ Open http://localhost:5173 (or the [live demo](https://spraysense.onrender.com))
 Two visits are what produce a real growth rate; one gives a prior-driven forecast
 with a deliberately wide interval.
 
-## Notes for the team
+### Remaining integration
 
+The dashboard's **Calculate next spray date** button still simulates its request.
+Wiring it to `POST /forecast` above is the last step — `TODO(ml-team)` in
+[src/components/FieldDetail.tsx](src/components/FieldDetail.tsx).
 - **Video**: `public/field-feed.mp4` (1280×720 h264, 8 s loop). Every field
   shares this one clip and relabels it `CAM-01 · <FIELD NAME>` — swap the file to
   change the footage everywhere. If it's missing or won't decode, an animated

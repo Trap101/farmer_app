@@ -6,9 +6,10 @@ interface Props {
   fields: Field[]
   activeFieldId: string | null
   onSelect: (field: Field) => void
+  onHome: () => void
 }
 
-export function FarmOverview({ fields, activeFieldId, onSelect }: Props) {
+export function FarmOverview({ fields, activeFieldId, onSelect, onHome }: Props) {
   return (
     <motion.div
       className="overview"
@@ -16,13 +17,14 @@ export function FarmOverview({ fields, activeFieldId, onSelect }: Props) {
       animate={{ opacity: 1 }}
     >
       <header className="overview-header">
+        <button className="brand" onClick={onHome} title="Back to home">
         <div className="brand">
           <img className="brand-mark" src="/logo.png" alt="" aria-hidden />
           <div>
             <h1>SpraySense</h1>
             <p className="brand-sub">Sunrise Valley Farm · Fresno County, CA</p>
           </div>
-        </div>
+        </button>
       </header>
 
       <div className="field-map-wrap">
